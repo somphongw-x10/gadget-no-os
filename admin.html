@@ -395,7 +395,8 @@ const AUTH = {
   user: '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', // admin
   pass: '7b9bf890ff275c42bd6a580b4fd76c43b19f2b22b48b74793cd4a2d03c653db1'  // gadget2026
 };
-const SESSION_KEY = 'gp_admin_auth';
+const AUTH_KEY  = 'gp_admin_auth';
+const AUTH_DAYS = 7;
 
 async function sha256(str){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -407,7 +408,8 @@ async function doLogin(){
   const p = document.getElementById('loginPass').value;
   const [uh, ph] = await Promise.all([sha256(u), sha256(p)]);
   if(uh === AUTH.user && ph === AUTH.pass){
-    sessionStorage.setItem(SESSION_KEY, '1');
+    // บันทึกลง localStorage พร้อมวันหมดอายุ 7 วัน
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ ok:1, exp: Date.now() + AUTH_DAYS*86400000 }));
     document.getElementById('loginOverlay').style.display = 'none';
   } else {
     document.getElementById('loginErr').style.display = 'block';
@@ -417,10 +419,12 @@ async function doLogin(){
 }
 
 function checkAuth(){
-  if(sessionStorage.getItem(SESSION_KEY) === '1'){
-    document.getElementById('loginOverlay').style.display = 'none';
-  }
-  // Enter key on login form
+  try {
+    const d = JSON.parse(localStorage.getItem(AUTH_KEY) || '{}');
+    if(d.ok && d.exp > Date.now()){
+      document.getElementById('loginOverlay').style.display = 'none';
+    }
+  } catch(e){}
   ['loginUser','loginPass'].forEach(id=>{
     document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
   });
