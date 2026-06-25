@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GadgetPick Admin — เพิ่มสินค้า</title>
+<style>
+  :root{
+    --charcoal:#111111;--dark-grey:#484848;--white:#FFFFFF;
+    --yellow:#FFEB3B;--red:#CC0008;--mint:#AADDDD;
+    --bg:#F5F5F5;--border:#CCCCCC;--divider:#DFDFDF;
+    --font:"Noto Sans Thai","Inter",-apple-system,sans-serif;
+    --green:#2e7d32;--orange:#e65100;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--font);background:var(--bg);color:var(--charcoal);font-size:15px;line-height:24px;}
+  a{color:var(--charcoal);}
+  img{max-width:100%;display:block;}
+
+  /* Layout */
+  .topbar{background:var(--charcoal);color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;}
+  .topbar .logo{font-weight:700;font-size:18px;display:flex;align-items:center;gap:8px;}
+  .topbar .logo .dot{background:var(--yellow);color:var(--charcoal);width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;}
+  .topbar .badge{font-size:12px;background:rgba(255,255,255,.12);padding:4px 10px;border-radius:20px;}
+  .topbar a{color:#ccc;font-size:13px;text-decoration:underline;}
+
+  .wrap{max-width:900px;margin:32px auto;padding:0 20px;}
+
+  /* Setup banner */
+  .setup-banner{background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:20px 24px;margin-bottom:28px;}
+  .setup-banner h3{font-size:15px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .setup-banner p{font-size:13px;color:var(--dark-grey);margin-bottom:12px;line-height:20px;}
+  .setup-banner .field-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .setup-banner input{flex:1;min-width:240px;height:40px;border:1px solid var(--border);border-radius:6px;padding:0 12px;font-size:13px;font-family:var(--font);}
+  .setup-banner button{height:40px;padding:0 18px;background:var(--charcoal);color:#fff;border:0;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .setup-banner button:hover{background:var(--dark-grey);}
+  .saved-ok{display:none;font-size:13px;color:var(--green);font-weight:600;margin-top:8px;}
+
+  /* Import box */
+  .import-box{background:#fff;border-radius:8px;border:1px solid var(--divider);padding:28px 28px 24px;margin-bottom:28px;}
+  .import-box h2{font-size:20px;font-weight:700;margin-bottom:6px;}
+  .import-box p{font-size:14px;color:var(--dark-grey);margin-bottom:20px;}
+
+  .url-row{display:flex;gap:10px;margin-bottom:8px;}
+  .url-row input{flex:1;height:52px;border:2px solid var(--charcoal);border-radius:8px;padding:0 16px;font-size:15px;font-family:var(--font);transition:.15s;}
+  .url-row input:focus{outline:none;border-color:#0066cc;box-shadow:0 0 0 3px rgba(0,102,204,.12);}
+  .url-row button{height:52px;padding:0 24px;background:var(--charcoal);color:#fff;border:0;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.15s;}
+  .url-row button:hover{background:var(--dark-grey);}
+  .url-row button:disabled{background:#bbb;cursor:not-allowed;}
+  .hint{font-size:12px;color:#888;margin-bottom:20px;}
+  .hint span{color:var(--charcoal);font-weight:600;}
+
+  /* Status */
+  .status{display:none;padding:12px 16px;border-radius:6px;font-size:13px;font-weight:600;margin-bottom:16px;}
+  .status.loading{background:#e3f2fd;color:#0d47a1;display:block;}
+  .status.error{background:#ffebee;color:#b71c1c;display:block;}
+  .status.ok{background:#e8f5e9;color:#1b5e20;display:block;}
+
+  /* Form */
+  .product-form{display:none;}
+  .product-form.show{display:block;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;margin-bottom:20px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field.full{grid-column:1/-1;}
+  label{font-size:13px;font-weight:700;color:var(--dark-grey);}
+  label .req{color:var(--red);}
+  input[type=text],input[type=url],input[type=number],textarea,select{
+    border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:14px;font-family:var(--font);
+    width:100%;transition:.15s;background:#fff;
+  }
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--charcoal);box-shadow:0 0 0 2px rgba(17,17,17,.1);}
+  textarea{resize:vertical;min-height:80px;line-height:21px;}
+
+  /* Preview card */
+  .preview-wrap{margin-bottom:20px;}
+  .preview-wrap h3{font-size:14px;font-weight:700;margin-bottom:10px;color:var(--dark-grey);}
+  .card-preview{max-width:320px;background:var(--bg);border-radius:4px;overflow:hidden;border:1px solid var(--divider);}
+  .card-preview .imgwrap{aspect-ratio:1/1;background:#ededed;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:60px;position:relative;}
+  .card-preview .imgwrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .card-preview .body{padding:14px;display:flex;flex-direction:column;gap:6px;}
+  .card-preview .cat-label{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--dark-grey);}
+  .card-preview h3{font-size:14px;font-weight:700;line-height:20px;}
+  .card-preview .desc{font-size:13px;color:var(--dark-grey);line-height:19px;}
+  .card-preview .price{font-size:18px;font-weight:700;}
+  .card-preview .price-old{font-size:12px;color:var(--dark-grey);text-decoration:line-through;}
+  .badge{font-size:11px;font-weight:700;padding:3px 7px;border-radius:2px;display:inline-block;}
+  .badge-mint{background:var(--mint);color:var(--charcoal);}
+  .badge-red{background:var(--red);color:#fff;}
+  .badge-grey{background:var(--charcoal);color:#fff;}
+  .badge-yellow{background:var(--yellow);color:var(--charcoal);}
+  .badges-row{display:flex;gap:6px;flex-wrap:wrap;}
+
+  /* Badges editor */
+  .badges-editor{display:flex;flex-direction:column;gap:8px;}
+  .badge-item{display:flex;gap:8px;align-items:center;}
+  .badge-item input{flex:1;}
+  .badge-item select{width:140px;}
+  .badge-item button{padding:6px 10px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:13px;}
+  .badge-item button:hover{background:#f5f5f5;}
+  .add-badge-btn{align-self:flex-start;padding:7px 14px;border:1px dashed var(--border);border-radius:6px;background:transparent;cursor:pointer;font-size:13px;color:var(--dark-grey);}
+  .add-badge-btn:hover{border-color:var(--charcoal);color:var(--charcoal);}
+
+  /* Image multi */
+  .img-list{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;}
+  .img-thumb{position:relative;width:80px;height:80px;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer;}
+  .img-thumb.active{border-color:var(--charcoal);}
+  .img-thumb img{width:100%;height:100%;object-fit:cover;}
+  .img-thumb .rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:0;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+  /* Actions */
+  .form-actions{display:flex;gap:12px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--divider);}
+  .btn-save{height:48px;padding:0 28px;background:var(--green);color:#fff;border:0;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;flex:1;max-width:280px;transition:.15s;}
+  .btn-save:hover{background:#1b5e20;}
+  .btn-save:disabled{background:#bbb;cursor:not-allowed;}
+  .btn-reset{height:48px;padding:0 20px;background:transparent;color:var(--dark-grey);border:1px solid var(--border);border-radius:8px;font-size:15px;cursor:pointer;}
+  .btn-reset:hover{background:#f5f5f5;}
+
+  /* Product list */
+  .prod-list-section{background:#fff;border-radius:8px;border:1px solid var(--divider);padding:28px;}
+  .prod-list-section h2{font-size:18px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+  .prod-list-section h2 span{font-size:13px;font-weight:400;color:var(--dark-grey);}
+  .prod-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .prod-table th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--divider);font-size:12px;font-weight:700;text-transform:uppercase;color:var(--dark-grey);}
+  .prod-table td{padding:12px;border-bottom:1px solid var(--divider);vertical-align:middle;}
+  .prod-table tr:last-child td{border-bottom:0;}
+  .prod-table tr:hover td{background:#fafafa;}
+  .prod-table .thumb{width:48px;height:48px;border-radius:4px;object-fit:cover;background:#ededed;}
+  .prod-table .thumb-emoji{width:48px;height:48px;border-radius:4px;background:#ededed;display:flex;align-items:center;justify-content:center;font-size:24px;}
+  .prod-name{font-weight:600;line-height:18px;}
+  .prod-cat{font-size:11px;color:var(--dark-grey);margin-top:2px;}
+  .prod-price{font-weight:700;font-size:14px;}
+  .prod-actions{display:flex;gap:8px;}
+  .tbl-btn{padding:5px 12px;border-radius:5px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600;}
+  .tbl-btn:hover{background:#f5f5f5;}
+  .tbl-btn.del{color:var(--red);border-color:#ffcdd2;}
+  .tbl-btn.del:hover{background:#ffebee;}
+  .empty-state{text-align:center;padding:40px;color:var(--dark-grey);font-size:14px;}
+
+  /* Toast */
+  .toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;border-radius:8px;font-size:14px;font-weight:700;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s ease;z-index:999;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast.green{background:var(--green);}
+  .toast.red{background:var(--red);}
+  .toast.blue{background:#0d47a1;}
+
+  /* Responsive */
+  @media(max-width:600px){
+    .form-grid{grid-template-columns:1fr;}
+    .field.full{grid-column:auto;}
+    .url-row{flex-direction:column;}
+    .prod-table th:nth-child(3),.prod-table td:nth-child(3),
+    .prod-table th:nth-child(4),.prod-table td:nth-child(4){display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><div class="dot">G</div>GadgetPick Admin</div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <a href="https://gadget.no-os.com" target="_blank">← ดูเว็บไซต์</a>
+    <span class="badge" id="countBadge">0 สินค้า</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Setup: GitHub Token -->
+  <div class="setup-banner" id="setupBanner">
+    <h3>⚙️ ตั้งค่า GitHub Token (ครั้งแรกครั้งเดียว)</h3>
+    <p>ใส่ GitHub Personal Access Token เพื่อให้ระบบบันทึกสินค้าลง repo ได้อัตโนมัติ<br>
+    สร้าง Token ได้ที่ <a href="https://github.com/settings/tokens/new?scopes=repo&description=GadgetPickAdmin" target="_blank">github.com/settings/tokens</a> → เลือก scope: <strong>repo</strong></p>
+    <div class="field-row">
+      <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+      <button onclick="saveToken()">บันทึก Token</button>
+    </div>
+    <div class="saved-ok" id="tokenOk">✓ บันทึก Token แล้ว — พร้อมใช้งาน</div>
+  </div>
+
+  <!-- Import from Shopee URL -->
+  <div class="import-box">
+    <h2>🛍️ เพิ่มสินค้าจาก Shopee</h2>
+    <p>วางลิงก์สินค้าจาก Shopee Affiliate — ระบบจะดึงชื่อ รูป ราคา รายละเอียด มาให้อัตโนมัติ</p>
+
+    <div class="url-row">
+      <input type="url" id="shopeeUrl" placeholder="https://s.shopee.co.th/XXXXXXX หรือ https://shopee.co.th/..." autocomplete="off">
+      <button id="fetchBtn" onclick="fetchShopee()">ดึงข้อมูล →</button>
+    </div>
+    <div class="hint">รองรับ: <span>s.shopee.co.th</span>, <span>shopee.co.th</span>, <span>affiliate.shopee.co.th</span></div>
+
+    <div class="status" id="status"></div>
+
+    <!-- Product edit form (shows after fetch) -->
+    <div class="product-form" id="productForm">
+      <div style="margin-bottom:20px;">
+        <div class="preview-wrap">
+          <h3>ตัวอย่างการแสดงผล</h3>
+          <div class="card-preview" id="cardPreview">
+            <div class="imgwrap" id="previewImgWrap">🖼️</div>
+            <div class="body">
+              <span class="cat-label" id="previewCat">หมวดหมู่</span>
+              <h3 id="previewName">ชื่อสินค้า</h3>
+              <div id="previewBadges" class="badges-row"></div>
+              <div class="desc" id="previewDesc">รายละเอียดสินค้า</div>
+              <div style="display:flex;align-items:baseline;gap:8px;">
+                <span class="price" id="previewPrice">฿0</span>
+                <span class="price-old" id="previewOld"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <!-- Images -->
+        <div class="field full">
+          <label>รูปภาพสินค้า <span class="req">*</span></label>
+          <input type="url" id="fImg" placeholder="URL รูปภาพหลัก" oninput="syncPreview()">
+          <div class="img-list" id="imgList"></div>
+          <div style="font-size:12px;color:#888;margin-top:4px;">คลิกรูปเล็กเพื่อเลือกเป็นรูปหลัก</div>
+        </div>
+
+        <!-- Name -->
+        <div class="field full">
+          <label>ชื่อสินค้า <span class="req">*</span></label>
+          <input type="text" id="fName" placeholder="ชื่อสินค้าที่จะแสดงบนเว็บ" oninput="syncPreview()">
+        </div>
+
+        <!-- Category -->
+        <div class="field">
+          <label>หมวดหมู่ <span class="req">*</span></label>
+          <input type="text" id="fCat" placeholder="เช่น หูฟัง, พาวเวอร์แบงก์" list="catList" oninput="syncPreview()">
+          <datalist id="catList">
+            <option value="ไฟโซล่า">
+            <option value="หูฟัง & ลำโพง">
+            <option value="พาวเวอร์แบงก์">
+            <option value="สมาร์ทวอทช์">
+            <option value="สมาร์ทโฮม">
+            <option value="อุปกรณ์ชาร์จ">
+            <option value="กล้อง">
+            <option value="คอมพิวเตอร์">
+            <option value="มือถือ & อุปกรณ์เสริม">
+          </datalist>
+        </div>
+
+        <!-- Rating -->
+        <div class="field">
+          <label>คะแนน (เช่น 4.8)</label>
+          <input type="text" id="fRating" placeholder="4.8" oninput="syncPreview()">
+        </div>
+
+        <!-- Price -->
+        <div class="field">
+          <label>ราคา (บาท) <span class="req">*</span></label>
+          <input type="text" id="fPrice" placeholder="890" oninput="syncPreview()">
+        </div>
+
+        <!-- Old Price -->
+        <div class="field">
+          <label>ราคาเดิม (บาท) — เว้นว่างถ้าไม่มีส่วนลด</label>
+          <input type="text" id="fOld" placeholder="1490" oninput="syncPreview()">
+        </div>
+
+        <!-- Reviews -->
+        <div class="field">
+          <label>จำนวนรีวิว</label>
+          <input type="text" id="fReviews" placeholder="1,234" oninput="syncPreview()">
+        </div>
+
+        <!-- Shopee URL -->
+        <div class="field">
+          <label>ลิงก์ Shopee (Affiliate) <span class="req">*</span></label>
+          <input type="url" id="fShopeeUrl" placeholder="https://s.shopee.co.th/..." oninput="syncPreview()">
+        </div>
+
+        <!-- Description -->
+        <div class="field full">
+          <label>คำอธิบายสินค้า</label>
+          <textarea id="fDesc" placeholder="รายละเอียดสั้น ๆ จุดเด่น ทำไมต้องซื้อ..." oninput="syncPreview()"></textarea>
+        </div>
+
+        <!-- Badges -->
+        <div class="field full">
+          <label>Badge/ป้ายสินค้า</label>
+          <div class="badges-editor" id="badgesEditor"></div>
+          <button class="add-badge-btn" onclick="addBadge()">+ เพิ่ม Badge</button>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-save" id="saveBtn" onclick="saveProduct()">💾 บันทึกสินค้าลงเว็บ</button>
+        <button class="btn-reset" onclick="resetForm()">✕ ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Product List -->
+  <div class="prod-list-section">
+    <h2>สินค้าทั้งหมด <span id="listCount"></span></h2>
+    <div id="prodTableWrap">
+      <div class="empty-state">กำลังโหลด...</div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── Config ── */
+const REPO   = 'somphongw-x10/gadget-no-os';
+const BRANCH = 'main';
+const FILE   = 'products.json';
+const PROXY  = 'https://api.allorigins.win/get?url=';
+
+let products = [];
+let editingId = null;
+let allImages = [];
+
+/* ── Token ── */
+function getToken(){ return localStorage.getItem('ghToken') || ''; }
+function saveToken(){
+  const v = document.getElementById('ghToken').value.trim();
+  if(!v){ toast('กรุณากรอก Token','red'); return; }
+  localStorage.setItem('ghToken', v);
+  document.getElementById('tokenOk').style.display = 'block';
+  document.getElementById('setupBanner').style.borderColor = '#a5d6a7';
+  document.getElementById('setupBanner').style.background = '#f1f8e9';
+  toast('บันทึก Token สำเร็จ ✓','green');
+}
+
+/* ── Toast ── */
+function toast(msg, type='green'){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>{ t.className = `toast ${type}`; }, 3200);
+}
+
+/* ── GitHub API ── */
+async function ghGet(path){
+  const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}?ref=${BRANCH}`,{
+    headers:{ Authorization:`token ${getToken()}`, Accept:'application/vnd.github.v3+json' }
+  });
+  if(!r.ok) throw new Error(`GitHub ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
+async function ghPut(path, content, sha, msg){
+  const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{
+    method:'PUT',
+    headers:{ Authorization:`token ${getToken()}`, 'Content-Type':'application/json', Accept:'application/vnd.github.v3+json' },
+    body: JSON.stringify({ message:msg, content:btoa(unescape(encodeURIComponent(content))), sha, branch:BRANCH })
+  });
+  if(!r.ok) throw new Error(`GitHub PUT ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
+/* ── Load products ── */
+async function loadProducts(){
+  try {
+    // Try GitHub API first (if token)
+    if(getToken()){
+      const f = await ghGet(FILE);
+      products = JSON.parse(atob(f.content.replace(/\n/g,'')));
+    } else {
+      // Fallback: fetch raw
+      const r = await fetch(`https://raw.githubusercontent.com/${REPO}/${BRANCH}/${FILE}?t=${Date.now()}`);
+      products = await r.json();
+    }
+  } catch(e){
+    products = [];
+    console.warn('Load products:', e);
+  }
+  renderTable();
+}
+
+/* ── Fetch Shopee ── */
+async function fetchShopee(){
+  const url = document.getElementById('shopeeUrl').value.trim();
+  if(!url){ toast('กรุณากรอก URL','red'); return; }
+
+  setStatus('loading','⏳ กำลังดึงข้อมูลจาก Shopee...');
+  document.getElementById('fetchBtn').disabled = true;
+
+  try {
+    // Resolve short link first
+    let finalUrl = url;
+    try {
+      const r = await fetch(PROXY + encodeURIComponent(url));
+      const j = await r.json();
+      // Check for redirect in response URL
+      if(j.status && j.status.url) finalUrl = j.status.url;
+      // Try parsing the HTML
+      const html = j.contents || '';
+      parseShopeeHtml(html, url);
+    } catch(e){
+      console.warn('Proxy fetch error:', e);
+      prefillFromUrl(url);
+    }
+
+  } catch(e){
+    setStatus('error', '❌ ดึงข้อมูลไม่ได้ กรอกรายละเอียดด้วยตนเองได้เลย');
+    showForm();
+    document.getElementById('fShopeeUrl').value = url;
+  } finally {
+    document.getElementById('fetchBtn').disabled = false;
+  }
+}
+
+function parseShopeeHtml(html, originalUrl){
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  const getMeta = (prop, name) => {
+    const el = doc.querySelector(`meta[property="${prop}"]`) || doc.querySelector(`meta[name="${name}"]`);
+    return el ? el.getAttribute('content') || '' : '';
+  };
+
+  const title       = getMeta('og:title','og:title') || getMeta('','title');
+  const description = getMeta('og:description','description');
+  const imgUrl      = getMeta('og:image','og:image');
+  const price       = getMeta('product:price:amount','') || getMeta('og:price:amount','');
+
+  // Get all images from og:image:secure_url and og:image
+  const imgEls = doc.querySelectorAll('meta[property="og:image"], meta[property="og:image:secure_url"]');
+  const imgs = [...new Set([...imgEls].map(e=>e.getAttribute('content')).filter(Boolean))];
+
+  // Try JSON-LD for richer data
+  let jsonData = null;
+  doc.querySelectorAll('script[type="application/ld+json"]').forEach(s=>{
+    try{
+      const d = JSON.parse(s.textContent);
+      if(d['@type']==='Product' || d.offers) jsonData = d;
+    }catch(e){}
+  });
+
+  // Fill form
+  const nameVal = title ? cleanTitle(title) : '';
+  const descVal = description ? description.replace(/\s+/g,' ').trim().substring(0,200) : '';
+  let priceVal  = price;
+  if(!priceVal && jsonData && jsonData.offers) priceVal = jsonData.offers.price || '';
+
+  // Rating
+  let ratingVal = '';
+  if(jsonData && jsonData.aggregateRating) ratingVal = jsonData.aggregateRating.ratingValue || '';
+
+  document.getElementById('fName').value       = nameVal;
+  document.getElementById('fDesc').value       = descVal;
+  document.getElementById('fPrice').value      = priceVal ? String(Math.round(Number(priceVal))) : '';
+  document.getElementById('fRating').value     = ratingVal ? String(Number(ratingVal).toFixed(1)) : '';
+  document.getElementById('fShopeeUrl').value  = originalUrl;
+
+  if(imgs.length > 0){
+    document.getElementById('fImg').value = imgs[0];
+    renderImgList(imgs);
+  } else if(imgUrl) {
+    document.getElementById('fImg').value = imgUrl;
+    renderImgList([imgUrl]);
+  }
+
+  allImages = imgs.length ? imgs : (imgUrl ? [imgUrl] : []);
+
+  if(!nameVal && !descVal && !imgUrl){
+    setStatus('error','⚠️ ดึงข้อมูลได้บางส่วน กรุณากรอกข้อมูลเพิ่มเติม');
+  } else {
+    setStatus('ok','✅ ดึงข้อมูลสำเร็จ ตรวจสอบและแก้ไขก่อนบันทึก');
+  }
+
+  showForm();
+  syncPreview();
+}
+
+function prefillFromUrl(url){
+  document.getElementById('fShopeeUrl').value = url;
+  setStatus('ok','📝 กรอกรายละเอียดสินค้าด้วยตนเอง แล้วกดบันทึก');
+  showForm();
+}
+
+function cleanTitle(t){
+  return t.replace(/\s*\|\s*Shopee.*$/i,'').replace(/\s*-\s*Shopee.*$/i,'').trim();
+}
+
+function setStatus(type, msg){
+  const el = document.getElementById('status');
+  el.className = `status ${type}`;
+  el.textContent = msg;
+}
+
+function showForm(){
+  document.getElementById('productForm').classList.add('show');
+  document.getElementById('productForm').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function renderImgList(imgs){
+  const list = document.getElementById('imgList');
+  list.innerHTML = imgs.map((src,i)=>`
+    <div class="img-thumb ${i===0?'active':''}" onclick="selectImg('${src}',this)" title="${src}">
+      <img src="${src}" alt="img${i}" onerror="this.parentElement.style.display='none'">
+    </div>
+  `).join('');
+}
+
+function selectImg(src, el){
+  document.querySelectorAll('.img-thumb').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('fImg').value = src;
+  syncPreview();
+}
+
+/* ── Preview ── */
+function syncPreview(){
+  const img  = document.getElementById('fImg').value.trim();
+  const name = document.getElementById('fName').value.trim();
+  const cat  = document.getElementById('fCat').value.trim();
+  const desc = document.getElementById('fDesc').value.trim();
+  const price= document.getElementById('fPrice').value.trim();
+  const old  = document.getElementById('fOld').value.trim();
+
+  const iw = document.getElementById('previewImgWrap');
+  iw.innerHTML = img ? `<img src="${img}" alt="">` : '🖼️';
+  document.getElementById('previewName').textContent  = name  || 'ชื่อสินค้า';
+  document.getElementById('previewCat').textContent   = cat   || 'หมวดหมู่';
+  document.getElementById('previewDesc').textContent  = desc  || '';
+  document.getElementById('previewPrice').textContent = price ? `฿${price}` : '฿0';
+  document.getElementById('previewOld').textContent   = old   ? `฿${old}`  : '';
+
+  // Badges preview
+  const badges = collectBadges();
+  document.getElementById('previewBadges').innerHTML = badges.map(b=>`<span class="badge ${b.c}">${b.t}</span>`).join('');
+}
+
+/* ── Badges ── */
+function addBadge(t='', c='badge-mint'){
+  const ed = document.getElementById('badgesEditor');
+  const row = document.createElement('div');
+  row.className = 'badge-item';
+  row.innerHTML = `
+    <input type="text" placeholder="ข้อความ badge เช่น ขายดี" value="${t}" oninput="syncPreview()" style="flex:1;">
+    <select onchange="syncPreview()">
+      <option value="badge-mint"  ${c==='badge-mint' ?'selected':''}>เขียว (mint)</option>
+      <option value="badge-grey"  ${c==='badge-grey' ?'selected':''}>ดำ (grey)</option>
+      <option value="badge-red"   ${c==='badge-red'  ?'selected':''}>แดง (red)</option>
+      <option value="badge-yellow"${c==='badge-yellow'?'selected':''}>เหลือง</option>
+    </select>
+    <button onclick="this.parentElement.remove();syncPreview()">✕</button>
+  `;
+  ed.appendChild(row);
+  syncPreview();
+}
+
+function collectBadges(){
+  return [...document.querySelectorAll('.badge-item')].map(r=>({
+    t: r.querySelector('input').value.trim(),
+    c: r.querySelector('select').value
+  })).filter(b=>b.t);
+}
+
+/* ── Save product ── */
+async function saveProduct(){
+  const name     = document.getElementById('fName').value.trim();
+  const price    = document.getElementById('fPrice').value.trim();
+  const shopeeUrl= document.getElementById('fShopeeUrl').value.trim();
+
+  if(!name || !price || !shopeeUrl){ toast('กรุณากรอก ชื่อสินค้า, ราคา และ ลิงก์ Shopee','red'); return; }
+  if(!getToken()){ toast('กรุณาบันทึก GitHub Token ก่อน','red'); return; }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+
+  const product = {
+    id:        editingId || 'p' + Date.now(),
+    img:       document.getElementById('fImg').value.trim(),
+    cat:       document.getElementById('fCat').value.trim(),
+    name,
+    rating:    document.getElementById('fRating').value.trim(),
+    reviews:   document.getElementById('fReviews').value.trim(),
+    desc:      document.getElementById('fDesc').value.trim(),
+    price,
+    old:       document.getElementById('fOld').value.trim(),
+    badges:    collectBadges(),
+    shopeeUrl,
+    addedAt:   new Date().toISOString().slice(0,10)
+  };
+
+  try {
+    // Fetch current file + sha
+    const fileData = await ghGet(FILE);
+    const sha = fileData.sha;
+    const current = JSON.parse(atob(fileData.content.replace(/\n/g,'')));
+
+    // Update or insert
+    if(editingId){
+      const idx = current.findIndex(p=>p.id===editingId);
+      if(idx >= 0) current[idx] = product; else current.unshift(product);
+    } else {
+      current.unshift(product);
+    }
+
+    await ghPut(FILE, JSON.stringify(current, null, 2), sha,
+      `${editingId ? 'update' : 'add'} product: ${name}`);
+
+    products = current;
+    renderTable();
+    resetForm();
+    toast(`✅ ${editingId ? 'อัปเดต' : 'เพิ่ม'}สินค้าสำเร็จ! เว็บจะอัปเดตใน ~1 นาที`, 'green');
+
+  } catch(e){
+    toast('❌ บันทึกไม่สำเร็จ: ' + e.message, 'red');
+    console.error(e);
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 บันทึกสินค้าลงเว็บ';
+  }
+}
+
+/* ── Delete ── */
+async function deleteProduct(id){
+  if(!confirm('ลบสินค้านี้?')) return;
+  if(!getToken()){ toast('กรุณาบันทึก GitHub Token ก่อน','red'); return; }
+
+  try {
+    const fileData = await ghGet(FILE);
+    const sha = fileData.sha;
+    const current = JSON.parse(atob(fileData.content.replace(/\n/g,'')));
+    const updated = current.filter(p=>p.id!==id);
+    await ghPut(FILE, JSON.stringify(updated, null, 2), sha, `remove product: ${id}`);
+    products = updated;
+    renderTable();
+    toast('ลบสินค้าแล้ว','green');
+  } catch(e){
+    toast('❌ ลบไม่สำเร็จ: '+e.message,'red');
+  }
+}
+
+/* ── Edit ── */
+function editProduct(id){
+  const p = products.find(x=>x.id===id);
+  if(!p) return;
+  editingId = id;
+
+  document.getElementById('fImg').value      = p.img || '';
+  document.getElementById('fName').value     = p.name || '';
+  document.getElementById('fCat').value      = p.cat || '';
+  document.getElementById('fRating').value   = p.rating || '';
+  document.getElementById('fReviews').value  = p.reviews || '';
+  document.getElementById('fDesc').value     = p.desc || '';
+  document.getElementById('fPrice').value    = p.price || '';
+  document.getElementById('fOld').value      = p.old || '';
+  document.getElementById('fShopeeUrl').value= p.shopeeUrl || '';
+  document.getElementById('shopeeUrl').value = p.shopeeUrl || '';
+
+  // Badges
+  document.getElementById('badgesEditor').innerHTML = '';
+  (p.badges||[]).forEach(b=>addBadge(b.t, b.c));
+
+  if(p.img) renderImgList([p.img]);
+
+  setStatus('ok', `✏️ กำลังแก้ไขสินค้า: ${p.name}`);
+  showForm();
+  syncPreview();
+  document.getElementById('import-box') && document.getElementById('import-box').scrollIntoView();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ── Reset ── */
+function resetForm(){
+  editingId = null;
+  allImages = [];
+  ['fImg','fName','fCat','fRating','fReviews','fDesc','fPrice','fOld','fShopeeUrl','shopeeUrl'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.getElementById('badgesEditor').innerHTML = '';
+  document.getElementById('imgList').innerHTML = '';
+  document.getElementById('productForm').classList.remove('show');
+  document.getElementById('status').className = 'status';
+  document.getElementById('fetchBtn').disabled = false;
+  syncPreview();
+}
+
+/* ── Render table ── */
+function renderTable(){
+  const wrap = document.getElementById('prodTableWrap');
+  const count = products.length;
+  document.getElementById('countBadge').textContent = `${count} สินค้า`;
+  document.getElementById('listCount').textContent  = `(${count} รายการ)`;
+
+  if(!count){
+    wrap.innerHTML = '<div class="empty-state">ยังไม่มีสินค้า — เพิ่มสินค้าแรกด้านบน</div>';
+    return;
+  }
+
+  wrap.innerHTML = `
+    <table class="prod-table">
+      <thead><tr>
+        <th>รูป</th>
+        <th>ชื่อสินค้า</th>
+        <th>หมวด</th>
+        <th>ราคา</th>
+        <th>วันที่เพิ่ม</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        ${products.map(p=>`
+          <tr>
+            <td>${p.img ? `<img class="thumb" src="${p.img}" alt="">` : `<div class="thumb-emoji">${p.emoji||'📦'}</div>`}</td>
+            <td><div class="prod-name">${p.name}</div><div class="prod-cat">${p.shopeeUrl ? `<a href="${p.shopeeUrl}" target="_blank" rel="noopener">ดูบน Shopee ↗</a>` : ''}</div></td>
+            <td>${p.cat||'-'}</td>
+            <td class="prod-price">฿${p.price}${p.old?`<br><span style="font-size:11px;color:#888;text-decoration:line-through;">฿${p.old}</span>`:''}</td>
+            <td style="font-size:12px;color:#888;">${p.addedAt||'-'}</td>
+            <td>
+              <div class="prod-actions">
+                <button class="tbl-btn" onclick="editProduct('${p.id}')">แก้ไข</button>
+                <button class="tbl-btn del" onclick="deleteProduct('${p.id}')">ลบ</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+/* ── Init ── */
+(function init(){
+  // Show token if saved
+  const tok = getToken();
+  if(tok){
+    document.getElementById('ghToken').value = tok;
+    document.getElementById('tokenOk').style.display = 'block';
+    document.getElementById('setupBanner').style.borderColor = '#a5d6a7';
+    document.getElementById('setupBanner').style.background = '#f1f8e9';
+  }
+  loadProducts();
+  syncPreview();
+  // Enter on URL input
+  document.getElementById('shopeeUrl').addEventListener('keydown', e=>{
+    if(e.key==='Enter') fetchShopee();
+  });
+})();
+</script>
+</body>
+</html>

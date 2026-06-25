@@ -376,37 +376,47 @@
 </footer>
 
 <script>
-  // === Product data — แก้ลิงก์ shopeeUrl ให้เป็นลิงก์ Affiliate ของคุณ ===
-  const products = [
-    {img:"https://down-th.img.susercontent.com/file/th-11134207-7r98z-lsfuqq2w4vjx0d",cat:"ไฟโซล่า",name:"HP-2314 โคมไฟหัวเสา ไฟโซล่าเซลล์ MINI ปักสนาม ตกแต่งบ้าน",rating:"4.8",reviews:"66",desc:"แสงเหลืองนวล ชาร์จด้วยแสงอาทิตย์ ไม่ต้องเดินไฟ กันน้ำ ติดตั้งง่าย ขายแล้ว 656 ชิ้น",price:"219",old:"",badges:[{t:"ส่งฟรี",c:"badge-grey"},{t:"ขายดี",c:"badge-mint"}],shopeeUrl:"https://s.shopee.co.th/7fXgCmDvjY"},
-    {emoji:"🔋",cat:"พาวเวอร์แบงก์",name:"Power Bank 20000mAh ชาร์จเร็ว PD 22.5W",rating:"4.8",reviews:"1,820",desc:"จุไฟเยอะ ชาร์จมือถือได้ 4-5 รอบ มีพอร์ต USB-C ในตัว",price:"590",old:"990",badges:[{t:"คุ้มสุด",c:"badge-grey"}],shopeeUrl:"https://shopee.co.th/"},
-    {emoji:"⌚",cat:"สมาร์ทวอทช์",name:"สมาร์ทวอทช์วัดออกซิเจน หน้าจอ AMOLED",rating:"4.7",reviews:"3,100",desc:"วัดหัวใจ-ออกซิเจน-การนอน กันน้ำ แบตอยู่ได้ 7 วัน",price:"1,290",old:"2,190",badges:[{t:"-41%",c:"badge-red"}],shopeeUrl:"https://shopee.co.th/"},
-    {emoji:"🔌",cat:"อุปกรณ์ชาร์จ",name:"หัวชาร์จเร็ว GaN 65W 3 พอร์ต",rating:"4.9",reviews:"980",desc:"ชาร์จโน้ตบุ๊ก-มือถือพร้อมกัน เล็กพกพาง่าย ปลอดภัยมาตรฐาน",price:"450",old:"720",badges:[{t:"มาใหม่",c:"badge-mint"}],shopeeUrl:"https://shopee.co.th/"},
-    {emoji:"💡",cat:"สมาร์ทโฮม",name:"หลอดไฟอัจฉริยะ RGB สั่งงานผ่านแอป",rating:"4.6",reviews:"1,540",desc:"ปรับสี 16 ล้านสี สั่งงานด้วยเสียง ตั้งเวลาเปิด-ปิดได้",price:"190",old:"320",badges:[{t:"-40%",c:"badge-red"}],shopeeUrl:"https://shopee.co.th/"},
-    {emoji:"🔊",cat:"ลำโพง",name:"ลำโพงบลูทูธกันน้ำ เบสแน่น พกพาได้",rating:"4.8",reviews:"2,070",desc:"เสียงดังใส เบสหนัก กันน้ำ IPX7 เล่นต่อเนื่อง 24 ชม.",price:"690",old:"1,190",badges:[{t:"ขายดี",c:"badge-mint"}],shopeeUrl:"https://shopee.co.th/"}
-  ];
+  const PRODUCTS_URL = 'https://raw.githubusercontent.com/somphongw-x10/gadget-no-os/main/products.json';
 
-  const grid = document.getElementById('prodGrid');
-  grid.innerHTML = products.map(p => `
+  function renderCard(p){
+    return `
     <article class="card">
       <div class="imgwrap">
-        <div class="badges">${p.badges.map(b=>`<span class="badge ${b.c}">${b.t}</span>`).join('')}</div>
-        ${p.img ? `<img src="${p.img}" alt="${p.name}" loading="lazy">` : p.emoji}
+        <div class="badges">${(p.badges||[]).map(b=>`<span class="badge ${b.c}">${b.t}</span>`).join('')}</div>
+        ${p.img ? `<img src="${p.img}" alt="${p.name}" loading="lazy">` : (p.emoji||'📦')}
       </div>
       <div class="body">
-        <span class="cat-label">${p.cat}</span>
+        <span class="cat-label">${p.cat||''}</span>
         <h3>${p.name}</h3>
-        <div class="rating"><span class="stars">★★★★★</span> ${p.rating} (${p.reviews})</div>
-        <p class="desc">${p.desc}</p>
+        ${p.rating ? `<div class="rating"><span class="stars">★★★★★</span> ${p.rating}${p.reviews ? ` (${p.reviews})` : ''}</div>` : ''}
+        <p class="desc">${p.desc||''}</p>
         <div class="price-row"><span class="price">฿${p.price}</span>${p.old?`<span class="price-old">฿${p.old}</span>`:''}</div>
       </div>
       <div class="foot">
         <a href="${p.shopeeUrl}" target="_blank" rel="nofollow sponsored noopener" class="btn btn-shopee">🛒 ช้อปบน Shopee</a>
       </div>
-    </article>
-  `).join('');
+    </article>`;
+  }
 
-  // Mobile menu (simple)
+  async function loadProducts(){
+    const grid = document.getElementById('prodGrid');
+    try {
+      const r = await fetch(PRODUCTS_URL + '?t=' + Date.now());
+      const products = await r.json();
+      if(!products.length){
+        grid.innerHTML = '<p style="text-align:center;color:#888;grid-column:1/-1;padding:40px 0;">ยังไม่มีสินค้า — ติดตามได้เร็ว ๆ นี้</p>';
+        return;
+      }
+      grid.innerHTML = products.map(renderCard).join('');
+    } catch(e){
+      grid.innerHTML = '<p style="text-align:center;color:#888;grid-column:1/-1;padding:40px 0;">ไม่สามารถโหลดสินค้าได้ กรุณาลองใหม่</p>';
+      console.error('Load products:', e);
+    }
+  }
+
+  loadProducts();
+
+  // Mobile menu
   document.querySelector('.menu-btn').addEventListener('click', () => {
     const l = document.querySelector('.nav-links');
     l.style.display = l.style.display === 'flex' ? 'none' : 'flex';
