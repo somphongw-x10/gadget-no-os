@@ -493,13 +493,42 @@ async function loadProducts(){
 function buildBookmarklet(){
   const adminUrl = location.origin + location.pathname;
   const code = `(function(){
-var n=document.querySelector('meta[property="og:title"]')?.content||document.title||'';
-var img=document.querySelector('meta[property="og:image"]')?.content||'';
-var price=document.querySelector('meta[property="product:price:amount"]')?.content||document.querySelector('meta[property="og:price:amount"]')?.content||'';
-var desc=document.querySelector('meta[property="og:description"]')?.content||'';
-var url=location.href;
+var getMeta=function(p){return document.querySelector('meta[property="'+p+'"]')?.content||document.querySelector('meta[name="'+p+'"]')?.content||'';};
+var n=getMeta('og:title')||document.title||'';
 n=n.replace(/\\s*[|\\-]\\s*Shopee.*/i,'').trim();
-var p='${adminUrl}?bm=1&name='+encodeURIComponent(n)+'&img='+encodeURIComponent(img)+'&price='+encodeURIComponent(price)+'&desc='+encodeURIComponent(desc.substring(0,200))+'&url='+encodeURIComponent(url);
+var img=getMeta('og:image');
+var desc=getMeta('og:description').substring(0,200);
+var price='',old='',rating='',reviews='',imgs='';
+try{
+  var lds=document.querySelectorAll('script[type="application/ld+json"]');
+  for(var i=0;i<lds.length;i++){
+    try{
+      var d=JSON.parse(lds[i].textContent);
+      if(d['@type']==='Product'||d.offers){
+        if(d.name&&!n)n=d.name;
+        if(d.offers){var o=Array.isArray(d.offers)?d.offers[0]:d.offers;price=String(o.price||o.lowPrice||'');}
+        if(d.aggregateRating){rating=String(d.aggregateRating.ratingValue||'');reviews=String(d.aggregateRating.reviewCount||d.aggregateRating.ratingCount||'');}
+        if(d.image){var im=Array.isArray(d.image)?d.image:[d.image];imgs=im.slice(0,6).join(',');}
+      }
+    }catch(e){}
+  }
+}catch(e){}
+if(!price){var pm=getMeta('product:price:amount')||getMeta('og:price:amount');price=pm;}
+if(!price){
+  var priceEl=document.querySelector('._3n5NQx span,._3EzioB,[class*="price"],[class*="Price"]');
+  if(priceEl){var m=priceEl.textContent.match(/[\\d,]+/);if(m)price=m[0].replace(/,/g,'');}
+}
+var url=location.href;
+var p='${adminUrl}?bm=1'
+  +'&name='+encodeURIComponent(n)
+  +'&img='+encodeURIComponent(img)
+  +'&imgs='+encodeURIComponent(imgs)
+  +'&price='+encodeURIComponent(price)
+  +'&old='+encodeURIComponent(old)
+  +'&rating='+encodeURIComponent(rating)
+  +'&reviews='+encodeURIComponent(reviews)
+  +'&desc='+encodeURIComponent(desc)
+  +'&url='+encodeURIComponent(url);
 window.open(p,'_blank');
 })();`;
   document.getElementById('bookmarkletBtn').href = 'javascript:' + code;
@@ -516,22 +545,45 @@ function openShopeeTab(){
 function readImportParams(){
   const p = new URLSearchParams(location.search);
   if(!p.get('bm')) return;
-  const name  = p.get('name') || '';
-  const img   = p.get('img')  || '';
-  const price = p.get('price')|| '';
-  const desc  = p.get('desc') || '';
-  const url   = p.get('url')  || '';
 
-  document.getElementById('fName').value   = name;
-  document.getElementById('fImg').value    = img;
-  document.getElementById('fPrice').value  = price ? String(Math.round(Number(price))) : '';
-  document.getElementById('fDesc').value   = desc;
+  const name    = p.get('name')    || '';
+  const img     = p.get('img')     || '';
+  const imgs    = p.get('imgs')    || '';
+  const price   = p.get('price')   || '';
+  const old     = p.get('old')     || '';
+  const rating  = p.get('rating')  || '';
+  const reviews = p.get('reviews') || '';
+  const desc    = p.get('desc')    || '';
+  const url     = p.get('url')     || '';
+
+  document.getElementById('fName').value    = name;
+  document.getElementById('fImg').value     = img;
+  document.getElementById('fPrice').value   = price ? String(Math.round(Number(String(price).replace(/,/g,'')))) : '';
+  document.getElementById('fOld').value     = old   ? String(Math.round(Number(String(old).replace(/,/g,'')))) : '';
+  document.getElementById('fRating').value  = rating  ? Number(rating).toFixed(1)  : '';
+  document.getElementById('fReviews').value = reviews || '';
+  document.getElementById('fDesc').value    = desc;
   document.getElementById('fShopeeUrl').value = url;
   document.getElementById('shopeeUrl').value  = url;
-  if(img) renderImgList([img]);
+
+  // รูปภาพทั้งหมด
+  const allImgs = imgs ? imgs.split(',').filter(Boolean) : (img ? [img] : []);
+  if(allImgs.length) renderImgList(allImgs);
+  allImages = allImgs;
+
+  // auto badge ส่วนลด
+  if(old && price && Number(old) > Number(price)){
+    const pct = Math.round((1 - Number(price)/Number(old)) * 100);
+    document.getElementById('badgesEditor').innerHTML = '';
+    addBadge(`-${pct}%`, 'badge-red');
+  }
 
   history.replaceState({}, '', location.pathname);
-  setStatus('ok','✅ ดึงข้อมูลจาก Shopee สำเร็จ! ตรวจสอบแล้วกดบันทึก');
+
+  const fields = [name, price, img].filter(Boolean).length;
+  setStatus('ok', fields >= 2
+    ? '✅ ดึงข้อมูลสำเร็จ! ตรวจสอบแล้วกดบันทึก'
+    : '⚠️ ได้ข้อมูลบางส่วน กรุณากรอกเพิ่มเติม');
   showForm(); syncPreview();
   toast('ดึงข้อมูลสำเร็จ ✓','green');
 }
