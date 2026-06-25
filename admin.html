@@ -155,6 +155,27 @@
     .prod-table th:nth-child(4),.prod-table td:nth-child(4){display:none;}
   }
 
+  /* ---------- Bookmarklet ---------- */
+  .bookmarklet-section{background:#f0f7ff;border:1.5px solid #90caf9;border-radius:10px;padding:20px 22px;margin-bottom:20px;}
+  .bookmarklet-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .bm-badge{background:#1565c0;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;}
+  .bookmarklet-head strong{font-size:15px;}
+  .bm-desc{font-size:13px;color:var(--dark-grey);margin-bottom:14px;line-height:19px;}
+  .bm-row{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;}
+  .bm-btn{
+    display:inline-flex;align-items:center;gap:6px;padding:12px 18px;
+    background:var(--charcoal);color:#fff;border-radius:8px;font-size:14px;font-weight:700;
+    cursor:grab;white-space:nowrap;user-select:none;text-decoration:none;
+    border:3px dashed transparent;transition:.15s;flex-shrink:0;
+  }
+  .bm-btn:hover{background:var(--dark-grey);border-color:rgba(255,255,255,.3);}
+  .bm-steps{display:flex;flex-direction:column;gap:7px;}
+  .bm-step{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dark-grey);}
+  .bm-step span{width:20px;height:20px;border-radius:50%;background:var(--charcoal);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .divider-or{text-align:center;position:relative;margin:20px 0;}
+  .divider-or::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--divider);}
+  .divider-or span{position:relative;background:#fff;padding:0 12px;font-size:12px;color:#aaa;font-weight:600;}
+
   /* ---------- Login overlay ---------- */
   .login-overlay{
     position:fixed;inset:0;background:#111;z-index:9999;
@@ -223,13 +244,31 @@
   <!-- Import from Shopee URL -->
   <div class="import-box">
     <h2>🛍️ เพิ่มสินค้าจาก Shopee</h2>
-    <p>วางลิงก์สินค้าจาก Shopee Affiliate — ระบบจะดึงชื่อ รูป ราคา รายละเอียด มาให้อัตโนมัติ</p>
+
+    <!-- Bookmarklet section -->
+    <div class="bookmarklet-section">
+      <div class="bookmarklet-head">
+        <span class="bm-badge">⚡ แนะนำ</span>
+        <strong>วิธีที่ดีที่สุด — Bookmarklet</strong>
+      </div>
+      <p class="bm-desc">ลากปุ่มนี้ไปวางที่ Bookmarks Bar แล้วกดตอนอยู่บนหน้าสินค้า Shopee — ดึงข้อมูลได้ครบ 100%</p>
+      <div class="bm-row">
+        <a class="bm-btn" id="bookmarkletBtn" href="#" title="ลากไปที่ Bookmarks Bar">🛍️ GadgetPick Import</a>
+        <div class="bm-steps">
+          <div class="bm-step"><span>1</span>ลากปุ่มนี้ไปวางที่แถบ Bookmarks Bar</div>
+          <div class="bm-step"><span>2</span>เปิดหน้าสินค้า Shopee ที่ต้องการ</div>
+          <div class="bm-step"><span>3</span>กดปุ่ม GadgetPick Import ในแถบ Bookmarks</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider-or"><span>หรือกรอกเอง</span></div>
 
     <div class="url-row">
       <input type="url" id="shopeeUrl" placeholder="https://s.shopee.co.th/XXXXXXX หรือ https://shopee.co.th/..." autocomplete="off">
-      <button id="fetchBtn" onclick="fetchShopee()">ดึงข้อมูล →</button>
+      <button id="fetchBtn" onclick="openShopeeTab()">เปิดหน้าสินค้า →</button>
     </div>
-    <div class="hint">รองรับ: <span>s.shopee.co.th</span>, <span>shopee.co.th</span>, <span>affiliate.shopee.co.th</span></div>
+    <div class="hint">วาง Affiliate URL ไว้ก่อน กดเปิดหน้า Shopee แล้วกด Bookmarklet</div>
 
     <div class="status" id="status"></div>
 
@@ -455,100 +494,169 @@ async function loadProducts(){
   renderTable();
 }
 
+/* ── Bookmarklet ── */
+function buildBookmarklet(){
+  const adminUrl = location.origin + location.pathname;
+  const code = `(function(){
+var n=document.querySelector('meta[property="og:title"]')?.content||document.title||'';
+var img=document.querySelector('meta[property="og:image"]')?.content||'';
+var price=document.querySelector('meta[property="product:price:amount"]')?.content||document.querySelector('meta[property="og:price:amount"]')?.content||'';
+var desc=document.querySelector('meta[property="og:description"]')?.content||'';
+var url=location.href;
+n=n.replace(/\\s*[|\\-]\\s*Shopee.*/i,'').trim();
+var p='${adminUrl}?bm=1&name='+encodeURIComponent(n)+'&img='+encodeURIComponent(img)+'&price='+encodeURIComponent(price)+'&desc='+encodeURIComponent(desc.substring(0,200))+'&url='+encodeURIComponent(url);
+window.open(p,'_blank');
+})();`;
+  document.getElementById('bookmarkletBtn').href = 'javascript:' + code;
+}
+
+function openShopeeTab(){
+  const url = document.getElementById('shopeeUrl').value.trim();
+  document.getElementById('fShopeeUrl').value = url;
+  if(url) window.open(url, '_blank');
+  setStatus('ok','📌 กด bookmarklet บนหน้า Shopee เพื่อดึงข้อมูล หรือกรอกเองด้านล่าง');
+  showForm();
+}
+
+function readImportParams(){
+  const p = new URLSearchParams(location.search);
+  if(!p.get('bm')) return;
+  const name  = p.get('name') || '';
+  const img   = p.get('img')  || '';
+  const price = p.get('price')|| '';
+  const desc  = p.get('desc') || '';
+  const url   = p.get('url')  || '';
+
+  document.getElementById('fName').value   = name;
+  document.getElementById('fImg').value    = img;
+  document.getElementById('fPrice').value  = price ? String(Math.round(Number(price))) : '';
+  document.getElementById('fDesc').value   = desc;
+  document.getElementById('fShopeeUrl').value = url;
+  document.getElementById('shopeeUrl').value  = url;
+  if(img) renderImgList([img]);
+
+  history.replaceState({}, '', location.pathname);
+  setStatus('ok','✅ ดึงข้อมูลจาก Shopee สำเร็จ! ตรวจสอบแล้วกดบันทึก');
+  showForm(); syncPreview();
+  toast('ดึงข้อมูลสำเร็จ ✓','green');
+}
+
 /* ── Fetch Shopee ── */
+const IMG_BASE = 'https://down-th.img.susercontent.com/file/';
+
 async function fetchShopee(){
   const url = document.getElementById('shopeeUrl').value.trim();
   if(!url){ toast('กรุณากรอก URL','red'); return; }
 
   setStatus('loading','⏳ กำลังดึงข้อมูลจาก Shopee...');
   document.getElementById('fetchBtn').disabled = true;
+  document.getElementById('fShopeeUrl').value = url;
 
   try {
-    // Resolve short link first
-    let finalUrl = url;
-    try {
-      const r = await fetch(PROXY + encodeURIComponent(url));
-      const j = await r.json();
-      // Check for redirect in response URL
-      if(j.status && j.status.url) finalUrl = j.status.url;
-      // Try parsing the HTML
-      const html = j.contents || '';
-      parseShopeeHtml(html, url);
-    } catch(e){
-      console.warn('Proxy fetch error:', e);
-      prefillFromUrl(url);
-    }
+    // Step 1: resolve short URL → get final URL with shopId/itemId
+    const resolveResp = await fetch(ALLORIGINS + encodeURIComponent(url), { signal: AbortSignal.timeout(10000) });
+    const resolveJson = await resolveResp.json();
+    const finalUrl    = (resolveJson.status && resolveJson.status.url) ? resolveJson.status.url : url;
 
+    // Step 2: extract shopId & itemId from URL pattern: -i.SHOPID.ITEMID
+    const match = finalUrl.match(/[?&-]i\.(\d+)\.(\d+)/);
+    if(match){
+      const shopId = match[1];
+      const itemId = match[2];
+      await fetchShopeeApi(shopId, itemId, url);
+    } else {
+      // Fallback: try parse HTML meta tags from whatever we got
+      const html = resolveJson.contents || '';
+      if(html) parseShopeeHtml(html, url);
+      else prefillFromUrl(url);
+    }
   } catch(e){
-    setStatus('error', '❌ ดึงข้อมูลไม่ได้ กรอกรายละเอียดด้วยตนเองได้เลย');
-    showForm();
-    document.getElementById('fShopeeUrl').value = url;
+    console.warn('Shopee fetch error:', e);
+    prefillFromUrl(url);
   } finally {
     document.getElementById('fetchBtn').disabled = false;
   }
 }
 
+async function fetchShopeeApi(shopId, itemId, affiliateUrl){
+  setStatus('loading',`⏳ ดึงข้อมูลสินค้า (ID: ${itemId})...`);
+  try {
+    const apiUrl = `https://shopee.co.th/api/v4/item/get?itemid=${itemId}&shopid=${shopId}`;
+    const r = await fetch(ALLORIGINS + encodeURIComponent(apiUrl), { signal: AbortSignal.timeout(10000) });
+    const j = await r.json();
+    const raw = typeof j.contents === 'string' ? JSON.parse(j.contents) : j.contents;
+
+    if(!raw || !raw.data){ prefillFromUrl(affiliateUrl); return; }
+
+    const d = raw.data;
+
+    // Name
+    const name = d.name || '';
+
+    // Price (in cents/100)
+    const priceMin = d.price_min || d.price || 0;
+    const priceOrig = d.price_before_discount || 0;
+    const price = priceMin ? Math.round(priceMin / 100000) : '';
+    const old   = (priceOrig && priceOrig > priceMin) ? Math.round(priceOrig / 100000) : '';
+
+    // Rating
+    const rating  = d.item_rating ? Number(d.item_rating.rating_star).toFixed(1) : '';
+    const reviews = d.item_rating ? d.item_rating.rating_count?.reduce((a,b)=>a+b,0) : '';
+
+    // Images
+    const imgs = (d.images || []).map(hash => IMG_BASE + hash);
+    const mainImg = imgs[0] || (d.image ? IMG_BASE + d.image : '');
+
+    // Description (first 200 chars)
+    const desc = (d.description || '').replace(/\s+/g,' ').trim().substring(0, 200);
+
+    // Fill form
+    document.getElementById('fName').value    = name;
+    document.getElementById('fPrice').value   = String(price);
+    document.getElementById('fOld').value     = old ? String(old) : '';
+    document.getElementById('fRating').value  = rating;
+    document.getElementById('fReviews').value = reviews ? reviews.toLocaleString() : '';
+    document.getElementById('fDesc').value    = desc;
+    document.getElementById('fImg').value     = mainImg;
+
+    if(imgs.length) renderImgList(imgs);
+    allImages = imgs;
+
+    // Auto-add badge if discount
+    if(old && old > price){
+      const pct = Math.round((1 - price/old) * 100);
+      document.getElementById('badgesEditor').innerHTML = '';
+      addBadge(`-${pct}%`, 'badge-red');
+    }
+
+    setStatus('ok', `✅ ดึงข้อมูลสำเร็จ! ตรวจสอบแล้วกดบันทึก`);
+    showForm();
+    syncPreview();
+
+  } catch(e){
+    console.warn('Shopee API error:', e);
+    prefillFromUrl(affiliateUrl);
+  }
+}
+
 function parseShopeeHtml(html, originalUrl){
   const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
+  const doc    = parser.parseFromString(html, 'text/html');
+  const getMeta = prop => { const el = doc.querySelector(`meta[property="${prop}"]`); return el ? el.getAttribute('content') || '' : ''; };
 
-  const getMeta = (prop, name) => {
-    const el = doc.querySelector(`meta[property="${prop}"]`) || doc.querySelector(`meta[name="${name}"]`);
-    return el ? el.getAttribute('content') || '' : '';
-  };
+  const name  = cleanTitle(getMeta('og:title'));
+  const desc  = getMeta('og:description').replace(/\s+/g,' ').trim().substring(0,200);
+  const img   = getMeta('og:image');
+  const price = getMeta('product:price:amount');
 
-  const title       = getMeta('og:title','og:title') || getMeta('','title');
-  const description = getMeta('og:description','description');
-  const imgUrl      = getMeta('og:image','og:image');
-  const price       = getMeta('product:price:amount','') || getMeta('og:price:amount','');
+  document.getElementById('fName').value   = name;
+  document.getElementById('fDesc').value   = desc;
+  document.getElementById('fPrice').value  = price ? String(Math.round(Number(price))) : '';
+  document.getElementById('fImg').value    = img;
+  if(img) renderImgList([img]);
 
-  // Get all images from og:image:secure_url and og:image
-  const imgEls = doc.querySelectorAll('meta[property="og:image"], meta[property="og:image:secure_url"]');
-  const imgs = [...new Set([...imgEls].map(e=>e.getAttribute('content')).filter(Boolean))];
-
-  // Try JSON-LD for richer data
-  let jsonData = null;
-  doc.querySelectorAll('script[type="application/ld+json"]').forEach(s=>{
-    try{
-      const d = JSON.parse(s.textContent);
-      if(d['@type']==='Product' || d.offers) jsonData = d;
-    }catch(e){}
-  });
-
-  // Fill form
-  const nameVal = title ? cleanTitle(title) : '';
-  const descVal = description ? description.replace(/\s+/g,' ').trim().substring(0,200) : '';
-  let priceVal  = price;
-  if(!priceVal && jsonData && jsonData.offers) priceVal = jsonData.offers.price || '';
-
-  // Rating
-  let ratingVal = '';
-  if(jsonData && jsonData.aggregateRating) ratingVal = jsonData.aggregateRating.ratingValue || '';
-
-  document.getElementById('fName').value       = nameVal;
-  document.getElementById('fDesc').value       = descVal;
-  document.getElementById('fPrice').value      = priceVal ? String(Math.round(Number(priceVal))) : '';
-  document.getElementById('fRating').value     = ratingVal ? String(Number(ratingVal).toFixed(1)) : '';
-  document.getElementById('fShopeeUrl').value  = originalUrl;
-
-  if(imgs.length > 0){
-    document.getElementById('fImg').value = imgs[0];
-    renderImgList(imgs);
-  } else if(imgUrl) {
-    document.getElementById('fImg').value = imgUrl;
-    renderImgList([imgUrl]);
-  }
-
-  allImages = imgs.length ? imgs : (imgUrl ? [imgUrl] : []);
-
-  if(!nameVal && !descVal && !imgUrl){
-    setStatus('error','⚠️ ดึงข้อมูลได้บางส่วน กรุณากรอกข้อมูลเพิ่มเติม');
-  } else {
-    setStatus('ok','✅ ดึงข้อมูลสำเร็จ ตรวจสอบและแก้ไขก่อนบันทึก');
-  }
-
-  showForm();
-  syncPreview();
+  setStatus(name || img ? 'ok' : 'error', name || img ? '✅ ดึงได้บางส่วน กรุณาตรวจสอบ' : '⚠️ กรุณากรอกข้อมูลเอง');
+  showForm(); syncPreview();
 }
 
 function prefillFromUrl(url){
@@ -804,6 +912,8 @@ function renderTable(){
 /* ── Init ── */
 (function init(){
   checkAuth();
+  buildBookmarklet();
+  readImportParams();
   // Show token if saved
   const tok = getToken();
   if(tok){
