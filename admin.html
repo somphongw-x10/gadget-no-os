@@ -767,10 +767,13 @@ async function saveProduct(){
   };
 
   try {
-    // Fetch current file + sha
-    const fileData = await ghGet(FILE);
+    // Fetch SHA from GitHub API + content from raw (UTF-8 ถูกต้อง)
+    const [fileData, rawResp] = await Promise.all([
+      ghGet(FILE),
+      fetch(`https://raw.githubusercontent.com/${REPO}/${BRANCH}/${FILE}?t=${Date.now()}`)
+    ]);
     const sha = fileData.sha;
-    const current = JSON.parse(atob(fileData.content.replace(/\n/g,'')));
+    const current = await rawResp.json();
 
     // Update or insert
     if(editingId){
@@ -802,9 +805,12 @@ async function deleteProduct(id){
   if(!getToken()){ toast('กรุณาบันทึก GitHub Token ก่อน','red'); return; }
 
   try {
-    const fileData = await ghGet(FILE);
+    const [fileData, rawResp] = await Promise.all([
+      ghGet(FILE),
+      fetch(`https://raw.githubusercontent.com/${REPO}/${BRANCH}/${FILE}?t=${Date.now()}`)
+    ]);
     const sha = fileData.sha;
-    const current = JSON.parse(atob(fileData.content.replace(/\n/g,'')));
+    const current = await rawResp.json();
     const updated = current.filter(p=>p.id!==id);
     await ghPut(FILE, JSON.stringify(updated, null, 2), sha, `remove product: ${id}`);
     products = updated;
