@@ -481,7 +481,7 @@ async function loadProducts(){
     // Try GitHub API first (if token)
     if(getToken()){
       const f = await ghGet(FILE);
-      products = JSON.parse(atob(f.content.replace(/\n/g,'')));
+      products = JSON.parse(decodeURIComponent(escape(atob(f.content.replace(/\n/g,'')))));
     } else {
       // Fallback: fetch raw
       const r = await fetch(`https://raw.githubusercontent.com/${REPO}/${BRANCH}/${FILE}?t=${Date.now()}`);
